@@ -1,4 +1,4 @@
-name: Kaabool Real Build
+name: Kaabool Super Build
 on:
   push:
     branches: [ main ]
@@ -10,30 +10,31 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android Project
+      - name: Setup Android Project (Fast Mode)
         run: |
-          # إنشاء مشروع React Native أساسي تلقائياً
-          npx react-native@latest init MyProject --skip-install --version 0.73.0
-          # استبدال كود المشروع بالكود الذي أرسله كعبول
-          cp App.js MyProject/App.js || echo "Using default App.js"
+          # إنشاء هيكل المشروع يدوياً لتوفير الوقت والذاكرة
+          mkdir -p MyProject/android
+          npx react-native@0.73.0 init MyProject --skip-install --version 0.73.0 --no-install
+          
+          # استبدال الكود بكود كعبول
+          if [ -f App.js ]; then
+            cp App.js MyProject/App.js
+          fi
+          
           cd MyProject/android
           chmod +x gradlew
 
       - name: Build APK
         run: |
           cd MyProject/android
-          ./gradlew assembleDebug
+          # تشغيل البناء مع تقليل استهلاك الذاكرة
+          ./gradlew assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx2048m"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
