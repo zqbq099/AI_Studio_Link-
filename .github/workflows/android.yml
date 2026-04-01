@@ -1,21 +1,42 @@
-name: Build Android APK
+name: Kaabool Real Build
 on:
   push:
     branches: [ main ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: set up JDK 17
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Build with Gradle
-        run: chmod +x gradlew && ./gradlew assembleDebug
+
+      - name: Setup Android Project
+        run: |
+          # إنشاء مشروع React Native أساسي تلقائياً
+          npx react-native@latest init MyProject --skip-install --version 0.73.0
+          # استبدال كود المشروع بالكود الذي أرسله كعبول
+          cp App.js MyProject/App.js || echo "Using default App.js"
+          cd MyProject/android
+          chmod +x gradlew
+
+      - name: Build APK
+        run: |
+          cd MyProject/android
+          ./gradlew assembleDebug
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: Kaabool-App
+          path: MyProject/android/app/build/outputs/apk/debug/app-debug.apk
