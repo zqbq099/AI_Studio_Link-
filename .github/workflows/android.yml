@@ -1,4 +1,4 @@
-name: Kaabool Pro Builder
+name: Kaabool Smart Core Builder
 on:
   push:
     branches: [ main ]
@@ -8,40 +8,54 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Setup Project and Apply Metadata
+
+      - name: Smart Project Initialization
         run: |
-          # التحديث هنا: استخدام الأمر الجديد والمباشر
-          npx @react-native-community/cli init TempApp --version 0.73.0 --skip-install --non-interactive
-          
-          cp App.js TempApp/App.js
-          
-          # قراءة الإعدادات من كعبول
+          # استخدام أسلوب 'yes' العالمي لتخطي أي سؤال تفاعلي مهما كان نوعه
+          # هذا يجعل كعبول ذكياً بما يكفي ليتعامل مع أي نسخة من React Native
+          yes | npx @react-native-community/cli init TempApp --version 0.73.0 --skip-install || {
+            echo "First method failed, trying fallback..."
+            npx react-native init TempApp --version 0.73.0 --skip-install --yes
+          }
+
+      - name: Inject Metadata and Code
+        run: |
+          # قراءة البيانات بذكاء مع وضع قيم افتراضية في حال الفقدان
           APP_NAME=$(jq -r '.name // "KaaboolApp"' kaabool-metadata.json)
           APP_VERSION=$(jq -r '.version // "1.0.0"' kaabool-metadata.json)
           
+          # حقن الكود البرمجي
+          cp App.js TempApp/App.js
+          
           cd TempApp
-          # تغيير اسم التطبيق في الأندرويد (دعم كلاً من التسمية القديمة والجديدة)
-          sed -i "s/TempApp/$APP_NAME/g" android/app/src/main/res/values/strings.xml
-          # تغيير الإصدار
+          # تعديل اسم التطبيق في ملفات الأندرويد بذكاء (Regex)
+          sed -i "s/>TempApp</>$APP_NAME</g" android/app/src/main/res/values/strings.xml
+          
+          # تعديل رقم الإصدار
           sed -i "s/versionName \"1.0\"/versionName \"$APP_VERSION\"/g" android/app/build.gradle
           
+          # تثبيت المكتبات
           npm install
-      - name: Build APK
+
+      - name: Build APK (Release)
         run: |
           cd TempApp/android
           chmod +x gradlew
           ./gradlew assembleRelease
-      - name: Upload APK
+
+      - name: Smart Artifact Delivery
         uses: actions/upload-artifact@v4
         with:
-          name: App-Release
+          name: Kaabool-App-Release
           path: TempApp/android/app/build/outputs/apk/release/*.apk
