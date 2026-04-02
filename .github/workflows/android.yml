@@ -1,46 +1,35 @@
-name: Kaabool Final Success
+name: Build Android APK (Optimized)
 on:
   push:
     branches: [ main ]
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Set up JDK 17
+      - uses: actions/checkout@v4
+      - name: set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: Setup Project
+      - name: Setup React Native
         run: |
-          # إنشاء المشروع باستخدام الأمر الصحيح والموصى به
-          npx @react-native-community/cli init MyProject --version 0.73.0 --skip-install
-          
-          # نقل الكود الذي أرسله كعبول
-          cp App.js MyProject/App.js
-          
-          # تثبيت المكتبات الضرورية (هذه الخطوة ستأخذ وقتاً لكنها تضمن النجاح)
-          cd MyProject
-          npm install --legacy-peer-deps
-
-      - name: Build Android APK
+          npm install -g react-native-cli
+          npx react-native init KaaboolApp --version 0.72.0 --skip-install
+          cp App.js KaaboolApp/App.js
+          cd KaaboolApp
+          npm install
+      - name: Optimize and Build (Release)
         run: |
-          cd MyProject/android
+          cd KaaboolApp/android
+          # تفعيل محرك Hermes لتقليل الحجم وزيادة السرعة
+          sed -i 's/enableHermes: false/enableHermes: true/g' app/build.gradle
+          # تقسيم التطبيق حسب نوع المعالج لتقليل الحجم (Split APKs)
+          sed -i 's/enableSeparateBuildPerCPUArchitecture = false/enableSeparateBuildPerCPUArchitecture = true/g' app/build.gradle
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
-          
+          ./gradlew assembleRelease
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Kaabool-App
-          path: MyProject/android/app/build/outputs/apk/debug/app-debug.apk
+          name: Kaabool_Optimized_APK
+          path: KaaboolApp/android/app/build/outputs/apk/release/*.apk
