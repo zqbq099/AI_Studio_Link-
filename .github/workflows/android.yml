@@ -1,59 +1,45 @@
-name: Kaabool Ultimate Success
+name: Kaabool Pro Builder
 on:
   push:
     branches: [ main ]
-
-# هذا السطر يحل مشكلة التحذير الذي ظهر لك في الصورة
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js 24
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
-
+          node-version: '20'
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: Setup Project
+      - name: Setup Project and Apply Metadata
         run: |
-          # حذف أي بقايا لمحاولات سابقة
-          rm -rf MyProject
+          npx react-native init TempApp --version 0.73.0 --skip-install
+          cp App.js TempApp/App.js
           
-          # إنشاء المشروع باستخدام أحدث الأدوات المتوافقة
-          npx @react-native-community/cli@latest init MyProject --version 0.73.0 --skip-install
+          # قراءة الإعدادات من كعبول (الاسم والإصدار)
+          APP_NAME=$(jq -r '.name' kaabool-metadata.json)
+          APP_VERSION=$(jq -r '.version' kaabool-metadata.json)
           
-          # التأكد من وجود الكود الذي أرسله كعبول ونسخه
-          if [ -f App.js ]; then
-            cp App.js MyProject/App.js
-            echo "✅ App.js found and copied."
-          else
-            echo "❌ Error: App.js not found in root."
-            exit 1
-          fi
+          cd TempApp
+          # تغيير اسم التطبيق في الأندرويد
+          sed -i "s/TempApp/$APP_NAME/g" android/app/src/main/res/values/strings.xml
+          # تغيير الإصدار
+          sed -i "s/versionName \"1.0\"/versionName \"$APP_VERSION\"/g" android/app/build.gradle
           
-          cd MyProject
-          npm install --legacy-peer-deps
-
-      - name: Build Android APK
+          npm install
+      - name: Build APK
         run: |
-          cd MyProject/android
+          cd TempApp/android
           chmod +x gradlew
-          # بناء نسخة Release خفيفة وسريعة
-          ./gradlew assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx2048m"
-          
+          ./gradlew assembleRelease
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Kaabool-Final-APK
-          path: MyProject/android/app/build/outputs/apk/release/*.apk
+          name: App-Release
+          path: TempApp/android/app/build/outputs/apk/release/*.apk
