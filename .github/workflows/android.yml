@@ -19,15 +19,17 @@ jobs:
           distribution: 'temurin'
       - name: Setup Project and Apply Metadata
         run: |
-          npx react-native init TempApp --version 0.73.0 --skip-install
+          # التحديث هنا: استخدام الأمر الجديد والمباشر
+          npx @react-native-community/cli init TempApp --version 0.73.0 --skip-install --non-interactive
+          
           cp App.js TempApp/App.js
           
-          # قراءة الإعدادات من كعبول (الاسم والإصدار)
-          APP_NAME=$(jq -r '.name' kaabool-metadata.json)
-          APP_VERSION=$(jq -r '.version' kaabool-metadata.json)
+          # قراءة الإعدادات من كعبول
+          APP_NAME=$(jq -r '.name // "KaaboolApp"' kaabool-metadata.json)
+          APP_VERSION=$(jq -r '.version // "1.0.0"' kaabool-metadata.json)
           
           cd TempApp
-          # تغيير اسم التطبيق في الأندرويد
+          # تغيير اسم التطبيق في الأندرويد (دعم كلاً من التسمية القديمة والجديدة)
           sed -i "s/TempApp/$APP_NAME/g" android/app/src/main/res/values/strings.xml
           # تغيير الإصدار
           sed -i "s/versionName \"1.0\"/versionName \"$APP_VERSION\"/g" android/app/build.gradle
