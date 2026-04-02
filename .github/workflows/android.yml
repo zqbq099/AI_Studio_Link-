@@ -1,35 +1,59 @@
-name: Build Android APK (Optimized)
+name: Kaabool Ultimate Success
 on:
   push:
     branches: [ main ]
+
+# هذا السطر يحل مشكلة التحذير الذي ظهر لك في الصورة
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: set up JDK 17
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Setup React Native
+
+      - name: Setup Project
         run: |
-          npm install -g react-native-cli
-          npx react-native init KaaboolApp --version 0.72.0 --skip-install
-          cp App.js KaaboolApp/App.js
-          cd KaaboolApp
-          npm install
-      - name: Optimize and Build (Release)
+          # حذف أي بقايا لمحاولات سابقة
+          rm -rf MyProject
+          
+          # إنشاء المشروع باستخدام أحدث الأدوات المتوافقة
+          npx @react-native-community/cli@latest init MyProject --version 0.73.0 --skip-install
+          
+          # التأكد من وجود الكود الذي أرسله كعبول ونسخه
+          if [ -f App.js ]; then
+            cp App.js MyProject/App.js
+            echo "✅ App.js found and copied."
+          else
+            echo "❌ Error: App.js not found in root."
+            exit 1
+          fi
+          
+          cd MyProject
+          npm install --legacy-peer-deps
+
+      - name: Build Android APK
         run: |
-          cd KaaboolApp/android
-          # تفعيل محرك Hermes لتقليل الحجم وزيادة السرعة
-          sed -i 's/enableHermes: false/enableHermes: true/g' app/build.gradle
-          # تقسيم التطبيق حسب نوع المعالج لتقليل الحجم (Split APKs)
-          sed -i 's/enableSeparateBuildPerCPUArchitecture = false/enableSeparateBuildPerCPUArchitecture = true/g' app/build.gradle
+          cd MyProject/android
           chmod +x gradlew
-          ./gradlew assembleRelease
+          # بناء نسخة Release خفيفة وسريعة
+          ./gradlew assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx2048m"
+          
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Kaabool_Optimized_APK
-          path: KaaboolApp/android/app/build/outputs/apk/release/*.apk
+          name: Kaabool-Final-APK
+          path: MyProject/android/app/build/outputs/apk/release/*.apk
