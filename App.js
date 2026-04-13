@@ -46,6 +46,10 @@ const ApnGuideScreen = ({ onBack }) => {
     `;
 
     try {
+      if (GEMINI_API_KEY === 'YOUR_API_KEY' || !GEMINI_API_KEY) {
+        throw new Error('مفتاح Gemini API غير موجود. يرجى إضافته في الكود.');
+      }
+      
       const response = await fetch(GEMINI_API_URL, {
         method: 'POST',
         headers: {
